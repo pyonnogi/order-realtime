@@ -13,7 +13,7 @@
 
   <script>
     // ==========================================
-    // 1. ここにFirebaseの設定情報を貼り付けてください
+    // 1. ここにご自身のFirebase設定情報を貼り付けてください
     // ==========================================
     const firebaseConfig = {
         apiKey: "AIzaSyC8pTZtifeZYpLv2yDWrRPHxeXVryGAgr8",
@@ -123,7 +123,7 @@
       </div>
 
       <div class="bg-white p-4 rounded-2xl shadow">
-        <h2 class="text-xl font-bold mb-3">登録商品・在庫一覧</h2>
+        <h2 class="text-xl font-bold mb-3">登録商品・在庫調整</h2>
         <div id="registered-products-list" class="divide-y divide-gray-200"></div>
       </div>
     </div>
@@ -257,53 +257,99 @@
     </div>
   </div>
 
-  <!-- モーダル: 新規入店 -->
+  <!-- モーダル: 新規入店 (改修版) -->
   <div id="checkin-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
       <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
         <i class="fa-solid fa-user-plus text-blue-600"></i> 新規チェックイン
       </h2>
       
       <div>
         <label class="block text-sm font-bold text-gray-700 mb-1">顧客名 / 伝票メモ</label>
-        <input type="text" id="checkin-name" placeholder="例: 田中様、カウンターA" class="w-full p-4 border-2 border-gray-300 rounded-2xl text-xl focus:border-blue-500 outline-none">
+        <input type="text" id="checkin-name" placeholder="例: 田中様、カウンターA" class="w-full p-3 border-2 border-gray-300 rounded-2xl text-xl focus:border-blue-500 outline-none">
       </div>
 
+      <!-- 入店タイプ選択（チャージ制 vs ワンドリンク制） -->
       <div>
-        <label class="block text-sm font-bold text-gray-700 mb-1">人数</label>
-        <div class="flex items-center gap-3">
-          <button onclick="changeGuestCount(-1)" class="w-14 h-14 bg-gray-200 text-gray-800 text-2xl font-bold rounded-2xl active:bg-gray-300">-</button>
-          <input type="number" id="checkin-guests" value="1" min="1" class="w-full text-center p-3 border-2 border-gray-300 rounded-2xl text-2xl font-bold outline-none" readonly>
-          <button onclick="changeGuestCount(1)" class="w-14 h-14 bg-gray-200 text-gray-800 text-2xl font-bold rounded-2xl active:bg-gray-300">+</button>
+        <label class="block text-sm font-bold text-gray-700 mb-1">入店タイプ</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" id="type-charge-btn" onclick="setCheckinType('charge')" class="py-3 font-bold rounded-2xl border-2 border-blue-600 bg-blue-600 text-white text-center">
+            チャージ制
+          </button>
+          <button type="button" id="type-onedrink-btn" onclick="setCheckinType('onedrink')" class="py-3 font-bold rounded-2xl border-2 border-gray-300 bg-white text-gray-700 text-center">
+            ワンドリンク制
+          </button>
         </div>
       </div>
 
-      <div class="bg-blue-50 p-4 rounded-2xl space-y-2 border border-blue-100">
-        <div class="flex justify-between items-center text-sm font-bold text-blue-900">
-          <span>チャージ設定 (先払い):</span>
-          <span>¥500 / 名</span>
-        </div>
-        <div class="flex justify-between items-center text-xl font-extrabold text-blue-900">
-          <span>徴収金額:</span>
-          <span id="checkin-charge-total">¥500</span>
+      <!-- チャージ制設定エリア -->
+      <div id="charge-settings-area" class="space-y-3 bg-blue-50 p-4 rounded-2xl border border-blue-100">
+        <div class="grid grid-cols-2 gap-3">
+          <!-- 男性人数 -->
+          <div>
+            <label class="block text-xs font-bold text-blue-900 mb-1">👨 男性人数</label>
+            <div class="flex items-center gap-1">
+              <button onclick="changeGenderGuests('male', -1)" class="w-10 h-10 bg-white border border-gray-300 rounded-xl font-bold text-lg">-</button>
+              <input type="number" id="checkin-guests-male" value="1" min="0" onchange="calculateCheckinTotal()" class="w-full text-center p-2 border border-gray-300 rounded-xl text-lg font-bold bg-white" readonly>
+              <button onclick="changeGenderGuests('male', 1)" class="w-10 h-10 bg-white border border-gray-300 rounded-xl font-bold text-lg">+</button>
+            </div>
+          </div>
+          <!-- 女性人数 -->
+          <div>
+            <label class="block text-xs font-bold text-blue-900 mb-1">👩 女性人数</label>
+            <div class="flex items-center gap-1">
+              <button onclick="changeGenderGuests('female', -1)" class="w-10 h-10 bg-white border border-gray-300 rounded-xl font-bold text-lg">-</button>
+              <input type="number" id="checkin-guests-female" value="0" min="0" onchange="calculateCheckinTotal()" class="w-full text-center p-2 border border-gray-300 rounded-xl text-lg font-bold bg-white" readonly>
+              <button onclick="changeGenderGuests('female', 1)" class="w-10 h-10 bg-white border border-gray-300 rounded-xl font-bold text-lg">+</button>
+            </div>
+          </div>
         </div>
 
-        <div class="pt-2">
-          <label class="block text-xs font-bold text-blue-800 mb-1">チャージの支払い方法:</label>
+        <!-- 単価カスタマイズ -->
+        <div class="grid grid-cols-2 gap-3 pt-1 text-xs border-t border-blue-200">
+          <div>
+            <label class="block font-bold text-blue-800 mb-0.5">男性単価 (¥)</label>
+            <input type="number" id="rate-male" value="1000" oninput="calculateCheckinTotal()" class="w-full p-2 border border-blue-200 rounded-lg font-bold text-center bg-white">
+          </div>
+          <div>
+            <label class="block font-bold text-blue-800 mb-0.5">女性単価 (¥)</label>
+            <input type="number" id="rate-female" value="500" oninput="calculateCheckinTotal()" class="w-full p-2 border border-blue-200 rounded-lg font-bold text-center bg-white">
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center text-xl font-extrabold text-blue-900 pt-2 border-t border-blue-200">
+          <span>チャージ合計:</span>
+          <span id="checkin-charge-total">¥1,000</span>
+        </div>
+
+        <div class="pt-1">
+          <label class="block text-xs font-bold text-blue-800 mb-1">支払い方法 (即時徴収):</label>
           <div class="grid grid-cols-2 gap-2">
-            <button type="button" onclick="setChargePayment('cash')" id="btn-charge-cash" class="py-3 font-bold rounded-xl border-2 border-emerald-600 bg-emerald-600 text-white text-center">
+            <button type="button" onclick="setChargePayment('cash')" id="btn-charge-cash" class="py-2.5 font-bold text-sm rounded-xl border-2 border-emerald-600 bg-emerald-600 text-white text-center">
               💵 現金
             </button>
-            <button type="button" onclick="setChargePayment('cashless')" id="btn-charge-cashless" class="py-3 font-bold rounded-xl border-2 border-gray-300 bg-white text-gray-700 text-center">
+            <button type="button" onclick="setChargePayment('cashless')" id="btn-charge-cashless" class="py-2.5 font-bold text-sm rounded-xl border-2 border-gray-300 bg-white text-gray-700 text-center">
               💳 キャッシュレス
             </button>
           </div>
         </div>
       </div>
 
+      <!-- ワンドリンク制説明エリア -->
+      <div id="onedrink-settings-area" class="hidden bg-purple-50 p-4 rounded-2xl border border-purple-100 text-center space-y-2">
+        <div class="text-sm font-bold text-purple-900">🥤 ワンドリンクオーダー制</div>
+        <div class="text-xs text-purple-700">入店時チャージ代金は ¥0 です。<br>注文時に最初のドリンクを追加してください。</div>
+        <div class="flex items-center justify-center gap-2 pt-1">
+          <span class="text-xs font-bold text-purple-900">人数:</span>
+          <button onclick="changeOnedrinkGuests(-1)" class="w-8 h-8 bg-white border border-gray-300 rounded-lg font-bold text-base">-</button>
+          <input type="number" id="checkin-guests-onedrink" value="1" min="1" class="w-12 text-center p-1 border border-gray-300 rounded-lg font-bold bg-white" readonly>
+          <button onclick="changeOnedrinkGuests(1)" class="w-8 h-8 bg-white border border-gray-300 rounded-lg font-bold text-base">+</button>
+        </div>
+      </div>
+
       <div class="flex gap-3 pt-2">
-        <button onclick="closeCheckinModal()" class="flex-1 bg-gray-200 text-gray-700 py-4 rounded-2xl font-bold text-lg">キャンセル</button>
-        <button onclick="handleCheckin()" class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg active:scale-95 transition">入店を確定</button>
+        <button onclick="closeCheckinModal()" class="flex-1 bg-gray-200 text-gray-700 py-3.5 rounded-2xl font-bold text-base">キャンセル</button>
+        <button onclick="handleCheckin()" class="flex-1 bg-blue-600 text-white py-3.5 rounded-2xl font-bold text-base shadow-lg active:scale-95 transition">入店を確定</button>
       </div>
     </div>
   </div>
@@ -318,7 +364,8 @@
             <h2 id="detail-name" class="text-2xl font-extrabold text-gray-900">---</h2>
           </div>
           <div class="text-sm text-gray-500 mt-1">
-            人数: <span id="detail-guests" class="font-bold text-gray-800">1</span>名 | 
+            人数: <span id="detail-guests" class="font-bold text-gray-800">1</span>名 
+            <span id="detail-type-badge" class="ml-1 text-xs px-2 py-0.5 rounded font-bold bg-blue-100 text-blue-800">チャージ制</span> | 
             入店: <span id="detail-time" class="font-bold text-gray-800">--:--</span>
           </div>
         </div>
@@ -411,8 +458,6 @@
 
   <!-- アプリJSロジック -->
   <script>
-    const CHARGE_PRICE_PER_PERSON = 500;
-
     let products = [
       { id: 'p1', name: '生ビール', price: 600, category: 'drink', defaultPaid: false, stockType: 'unlimited', stockCount: 0 },
       { id: 'p2', name: 'ハイボール', price: 500, category: 'drink', defaultPaid: false, stockType: 'unlimited', stockCount: 0 },
@@ -430,6 +475,7 @@
     let selectedProductForOrder = null;
     let selectedOrderPayType = 'unpaid';
     let selectedChargePayType = 'cash';
+    let selectedCheckinType = 'charge'; // 'charge' or 'onedrink'
 
     window.addEventListener('DOMContentLoaded', () => {
       if (isFirebaseActive) {
@@ -478,12 +524,8 @@
       });
     }
 
-    function syncProductsToFirebase() {
-      products.forEach(p => db.collection('products').doc(p.id).set(p));
-    }
-    function syncEventsToFirebase() {
-      events.forEach(e => db.collection('events').doc(e.id).set(e));
-    }
+    function syncProductsToFirebase() { products.forEach(p => db.collection('products').doc(p.id).set(p)); }
+    function syncEventsToFirebase() { events.forEach(e => db.collection('events').doc(e.id).set(e)); }
 
     function saveData() {
       if (!isFirebaseActive) {
@@ -548,6 +590,10 @@
         const totalUnpaid = (cust.items || []).filter(i => !i.paid).reduce((sum, i) => sum + i.price, 0);
         const totalPaid = (cust.items || []).filter(i => i.paid).reduce((sum, i) => sum + i.price, 0);
 
+        const typeBadgeHtml = cust.checkinType === 'onedrink'
+          ? `<span class="text-xs bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded">ワンドリンク制</span>`
+          : `<span class="text-xs bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded">チャージ制 (${cust.guests}名)</span>`;
+
         const card = document.createElement('div');
         card.className = 'bg-white rounded-3xl p-5 shadow-md border-2 border-gray-100 active:scale-98 transition cursor-pointer flex justify-between items-center';
         card.onclick = () => openDetailModal(cust.id);
@@ -558,9 +604,9 @@
               <span class="text-xs font-mono font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">#${cust.code}</span>
               <h3 class="text-2xl font-black text-gray-800">${cust.name}</h3>
             </div>
-            <div class="text-sm font-bold text-gray-500 flex items-center gap-3">
-              <span>👥 ${cust.guests}名</span>
-              <span>⏰ ${cust.checkinTime} 入店</span>
+            <div class="text-sm font-bold text-gray-500 flex items-center gap-2">
+              ${typeBadgeHtml}
+              <span>⏰ ${cust.checkinTime}</span>
             </div>
           </div>
           <div class="text-right">
@@ -573,25 +619,62 @@
       });
     }
 
+    // --- チェックイン モーダルコントロール ---
     function openCheckinModal() {
       document.getElementById('checkin-name').value = '';
-      document.getElementById('checkin-guests').value = '1';
+      document.getElementById('checkin-guests-male').value = '1';
+      document.getElementById('checkin-guests-female').value = '0';
+      document.getElementById('checkin-guests-onedrink').value = '1';
+      setCheckinType('charge');
       setChargePayment('cash');
-      updateCheckinCharge();
+      calculateCheckinTotal();
       document.getElementById('checkin-modal').classList.remove('hidden');
     }
     function closeCheckinModal() { document.getElementById('checkin-modal').classList.add('hidden'); }
 
-    function changeGuestCount(delta) {
-      const input = document.getElementById('checkin-guests');
+    function setCheckinType(type) {
+      selectedCheckinType = type;
+      const chargeBtn = document.getElementById('type-charge-btn');
+      const onedrinkBtn = document.getElementById('type-onedrink-btn');
+      const chargeArea = document.getElementById('charge-settings-area');
+      const onedrinkArea = document.getElementById('onedrink-settings-area');
+
+      if (type === 'charge') {
+        chargeBtn.className = 'py-3 font-bold rounded-2xl border-2 border-blue-600 bg-blue-600 text-white text-center';
+        onedrinkBtn.className = 'py-3 font-bold rounded-2xl border-2 border-gray-300 bg-white text-gray-700 text-center';
+        chargeArea.classList.remove('hidden');
+        onedrinkArea.classList.add('hidden');
+      } else {
+        chargeBtn.className = 'py-3 font-bold rounded-2xl border-2 border-gray-300 bg-white text-gray-700 text-center';
+        onedrinkBtn.className = 'py-3 font-bold rounded-2xl border-2 border-purple-600 bg-purple-600 text-white text-center';
+        chargeArea.classList.add('hidden');
+        onedrinkArea.classList.remove('hidden');
+      }
+    }
+
+    function changeGenderGuests(gender, delta) {
+      const input = document.getElementById(`checkin-guests-${gender}`);
+      let val = parseInt(input.value) || 0;
+      val = Math.max(0, val + delta);
+      input.value = val;
+      calculateCheckinTotal();
+    }
+
+    function changeOnedrinkGuests(delta) {
+      const input = document.getElementById('checkin-guests-onedrink');
       let val = parseInt(input.value) || 1;
       val = Math.max(1, val + delta);
       input.value = val;
-      updateCheckinCharge();
     }
-    function updateCheckinCharge() {
-      const guests = parseInt(document.getElementById('checkin-guests').value) || 1;
-      document.getElementById('checkin-charge-total').innerText = `¥${(guests * CHARGE_PRICE_PER_PERSON).toLocaleString()}`;
+
+    function calculateCheckinTotal() {
+      const maleCount = parseInt(document.getElementById('checkin-guests-male').value) || 0;
+      const femaleCount = parseInt(document.getElementById('checkin-guests-female').value) || 0;
+      const maleRate = parseInt(document.getElementById('rate-male').value) || 0;
+      const femaleRate = parseInt(document.getElementById('rate-female').value) || 0;
+
+      const total = (maleCount * maleRate) + (femaleCount * femaleRate);
+      document.getElementById('checkin-charge-total').innerText = `¥${total.toLocaleString()}`;
     }
 
     function setChargePayment(type) {
@@ -599,36 +682,63 @@
       const btnCash = document.getElementById('btn-charge-cash');
       const btnCashless = document.getElementById('btn-charge-cashless');
       if (type === 'cash') {
-        btnCash.className = 'py-3 font-bold rounded-xl border-2 border-emerald-600 bg-emerald-600 text-white text-center';
-        btnCashless.className = 'py-3 font-bold rounded-xl border-2 border-gray-300 bg-white text-gray-700 text-center';
+        btnCash.className = 'py-2.5 font-bold text-sm rounded-xl border-2 border-emerald-600 bg-emerald-600 text-white text-center';
+        btnCashless.className = 'py-2.5 font-bold text-sm rounded-xl border-2 border-gray-300 bg-white text-gray-700 text-center';
       } else {
-        btnCash.className = 'py-3 font-bold rounded-xl border-2 border-gray-300 bg-white text-gray-700 text-center';
-        btnCashless.className = 'py-3 font-bold rounded-xl border-2 border-purple-600 bg-purple-600 text-white text-center';
+        btnCash.className = 'py-2.5 font-bold text-sm rounded-xl border-2 border-gray-300 bg-white text-gray-700 text-center';
+        btnCashless.className = 'py-2.5 font-bold text-sm rounded-xl border-2 border-purple-600 bg-purple-600 text-white text-center';
       }
     }
 
     function handleCheckin() {
       const nameInput = document.getElementById('checkin-name').value.trim();
-      const guests = parseInt(document.getElementById('checkin-guests').value) || 1;
       const now = new Date();
       const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      
-      const newCust = {
-        id: 'c_' + Date.now(),
-        eventId: currentEventId,
-        code: String(Math.floor(Math.random() * 899) + 100),
-        name: nameInput || `伝票 #${Math.floor(Math.random() * 899) + 100}`,
-        guests: guests,
-        checkinTime: timeStr,
-        items: [{
+
+      let guests = 1;
+      let initialItems = [];
+
+      if (selectedCheckinType === 'charge') {
+        const maleCount = parseInt(document.getElementById('checkin-guests-male').value) || 0;
+        const femaleCount = parseInt(document.getElementById('checkin-guests-female').value) || 0;
+        const maleRate = parseInt(document.getElementById('rate-male').value) || 0;
+        const femaleRate = parseInt(document.getElementById('rate-female').value) || 0;
+        
+        guests = maleCount + femaleCount;
+        const totalCharge = (maleCount * maleRate) + (femaleCount * femaleRate);
+
+        if (guests === 0) {
+          alert('1名以上の人数を入力してください');
+          return;
+        }
+
+        let detailStr = [];
+        if (maleCount > 0) detailStr.push(`男${maleCount}名`);
+        if (femaleCount > 0) detailStr.push(`女${femaleCount}名`);
+
+        initialItems.push({
           id: 'item_' + Date.now(),
-          name: `チャージ (${guests}名)`,
-          price: guests * CHARGE_PRICE_PER_PERSON,
+          name: `チャージ (${detailStr.join('/')})`,
+          price: totalCharge,
           category: 'charge',
           paid: true,
           payType: selectedChargePayType,
           time: timeStr
-        }]
+        });
+      } else {
+        // ワンドリンク制
+        guests = parseInt(document.getElementById('checkin-guests-onedrink').value) || 1;
+      }
+
+      const newCust = {
+        id: 'c_' + Date.now(),
+        eventId: currentEventId,
+        checkinType: selectedCheckinType,
+        code: String(Math.floor(Math.random() * 899) + 100),
+        name: nameInput || `伝票 #${Math.floor(Math.random() * 899) + 100}`,
+        guests: guests,
+        checkinTime: timeStr,
+        items: initialItems
       };
 
       if (isFirebaseActive) {
@@ -650,6 +760,15 @@
       document.getElementById('detail-name').innerText = cust.name;
       document.getElementById('detail-guests').innerText = cust.guests;
       document.getElementById('detail-time').innerText = cust.checkinTime;
+
+      const typeBadge = document.getElementById('detail-type-badge');
+      if (cust.checkinType === 'onedrink') {
+        typeBadge.innerText = 'ワンドリンク制';
+        typeBadge.className = 'ml-1 text-xs px-2 py-0.5 rounded font-bold bg-purple-100 text-purple-800';
+      } else {
+        typeBadge.innerText = 'チャージ制';
+        typeBadge.className = 'ml-1 text-xs px-2 py-0.5 rounded font-bold bg-blue-100 text-blue-800';
+      }
 
       selectedProductForOrder = null;
       document.getElementById('selected-product-display').innerText = '商品を選択してください';
@@ -765,7 +884,6 @@
 
       cust.items.push(newItem);
 
-      // 在庫数の減算
       if (selectedProductForOrder.stockType === 'limited') {
         selectedProductForOrder.stockCount = Math.max(0, selectedProductForOrder.stockCount - 1);
         if (isFirebaseActive) db.collection('products').doc(selectedProductForOrder.id).update({ stockCount: selectedProductForOrder.stockCount });
@@ -819,7 +937,7 @@
       alert(`${cust.name} の会計・退店処理が完了しました。`);
     }
 
-    // 商品管理
+    // 商品管理 & 在庫調整
     function toggleStockInput(val) {
       document.getElementById('stock-count-container').classList.toggle('hidden', val !== 'limited');
     }
@@ -848,22 +966,57 @@
       toggleStockInput('unlimited');
     }
 
+    function updateProductStock(prodId, delta, directValue = null) {
+      const p = products.find(prod => prod.id === prodId);
+      if (!p) return;
+
+      let newCount = p.stockCount;
+      if (directValue !== null) {
+        newCount = Math.max(0, parseInt(directValue) || 0);
+      } else {
+        newCount = Math.max(0, p.stockCount + delta);
+      }
+
+      p.stockCount = newCount;
+
+      if (isFirebaseActive) {
+        db.collection('products').doc(prodId).update({ stockCount: newCount });
+      } else {
+        saveData();
+        renderProductList();
+        renderQuickMenuButtons();
+      }
+    }
+
     function renderProductList() {
       const container = document.getElementById('registered-products-list');
       container.innerHTML = '';
 
       products.forEach((p, idx) => {
         const row = document.createElement('div');
-        row.className = 'py-3 flex justify-between items-center';
-        let stockStr = p.stockType === 'limited' ? ` | 在庫: <span class="font-bold text-blue-600">${p.stockCount}個</span>` : ' | 在庫無制限';
+        row.className = 'py-3 flex justify-between items-center gap-2';
+
+        let stockControlHtml = '';
+        if (p.stockType === 'limited') {
+          stockControlHtml = `
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+              <span class="text-xs font-bold text-gray-500 px-1">在庫:</span>
+              <button onclick="updateProductStock('${p.id}', -1)" class="w-8 h-8 bg-white text-gray-700 font-bold border rounded-lg shadow-sm active:bg-gray-200">-</button>
+              <input type="number" value="${p.stockCount}" min="0" onchange="updateProductStock('${p.id}', 0, this.value)" class="w-12 text-center font-extrabold text-blue-600 bg-transparent outline-none">
+              <button onclick="updateProductStock('${p.id}', 1)" class="w-8 h-8 bg-white text-gray-700 font-bold border rounded-lg shadow-sm active:bg-gray-200">+</button>
+            </div>
+          `;
+        } else {
+          stockControlHtml = `<span class="text-xs font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-lg">無制限</span>`;
+        }
 
         row.innerHTML = `
-          <div>
-            <div class="font-bold text-lg text-gray-800">${p.name}</div>
-            <div class="text-xs text-gray-400">カテゴリ: ${p.category}${stockStr}</div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-lg text-gray-800 truncate">${p.name}</div>
+            <div class="text-xs text-gray-400">¥${p.price.toLocaleString()} | ${p.category}</div>
           </div>
-          <div class="flex items-center gap-3">
-            <span class="font-extrabold text-lg text-gray-900">¥${p.price.toLocaleString()}</span>
+          <div class="flex items-center gap-2">
+            ${stockControlHtml}
             <button onclick="deleteProduct('${p.id}', ${idx})" class="text-red-500 hover:text-red-700 p-2 text-sm font-bold">削除</button>
           </div>
         `;
