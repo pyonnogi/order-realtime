@@ -16,13 +16,13 @@
     // 1. ここにご自身のFirebase設定情報を貼り付けてください
     // ==========================================
     const firebaseConfig = {
-        apiKey: "AIzaSyC8pTZtifeZYpLv2yDWrRPHxeXVryGAgr8",
-        authDomain: "order-realtime.firebaseapp.com",
-        projectId: "order-realtime",
-        storageBucket: "order-realtime.firebasestorage.app",
-        messagingSenderId: "1088471319849",
-        appId: "1:1088471319849:web:3947b758b342d11d8a6338",
-        measurementId: "G-E5GFLCK74W"
+      apiKey: "AIzaSyC8pTZtifeZYpLv2yDWrRPHxeXVryGAgr8",
+      authDomain: "order-realtime.firebaseapp.com",
+      projectId: "order-realtime",
+      storageBucket: "order-realtime.firebasestorage.app",
+      messagingSenderId: "1088471319849",
+      appId: "1:1088471319849:web:3947b758b342d11d8a6338",
+      measurementId: "G-E5GFLCK74W"
     };
 
     // Firebase 初期化
@@ -72,8 +72,9 @@
     </div>
 
     <!-- TAB 2: 商品・在庫管理 -->
-    <div id="tab-products" class="tab-content hidden">
-    <!-- 【追加】チャージ基本設定カード -->
+    <div id="tab-products" class="tab-content hidden space-y-4">
+      
+      <!-- チャージ基本設定カード -->
       <div class="bg-white p-4 rounded-2xl shadow border-2 border-blue-100 space-y-3">
         <h2 class="text-xl font-bold text-slate-800 flex items-center justify-between">
           <span><i class="fa-solid fa-gear text-blue-600"></i> チャージ基本単価設定</span>
@@ -90,11 +91,13 @@
             <input type="number" id="setting-rate-female" value="500" min="0" class="w-full p-2.5 border-2 border-gray-300 rounded-xl text-lg font-bold text-center focus:border-blue-500 outline-none">
           </div>
         </div>
-    
+
         <button onclick="saveChargeSettings()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-base font-bold shadow transition active:scale-98">
           チャージ基本単価を保存
         </button>
       </div>
+
+      <!-- 新規商品・在庫登録フォーム -->
       <div class="bg-white p-4 rounded-2xl shadow mb-4">
         <h2 class="text-xl font-bold mb-3 flex items-center gap-2">
           <i class="fa-solid fa-plus-circle text-blue-600"></i> 新規商品・在庫登録
@@ -279,7 +282,7 @@
     </div>
   </div>
 
-  <!-- モーダル: 新規入店 (改修版) -->
+  <!-- モーダル: 新規入店 -->
   <div id="checkin-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
       <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -291,7 +294,7 @@
         <input type="text" id="checkin-name" placeholder="例: 田中様、カウンターA" class="w-full p-3 border-2 border-gray-300 rounded-2xl text-xl focus:border-blue-500 outline-none">
       </div>
 
-      <!-- 入店タイプ選択（チャージ制 vs ワンドリンク制） -->
+      <!-- 入店タイプ選択 -->
       <div>
         <label class="block text-sm font-bold text-gray-700 mb-1">入店タイプ</label>
         <div class="grid grid-cols-2 gap-2">
@@ -307,7 +310,6 @@
       <!-- チャージ制設定エリア -->
       <div id="charge-settings-area" class="space-y-3 bg-blue-50 p-4 rounded-2xl border border-blue-100">
         <div class="grid grid-cols-2 gap-3">
-          <!-- 男性人数 -->
           <div>
             <label class="block text-xs font-bold text-blue-900 mb-1">👨 男性人数</label>
             <div class="flex items-center gap-1">
@@ -316,7 +318,6 @@
               <button onclick="changeGenderGuests('male', 1)" class="w-10 h-10 bg-white border border-gray-300 rounded-xl font-bold text-lg">+</button>
             </div>
           </div>
-          <!-- 女性人数 -->
           <div>
             <label class="block text-xs font-bold text-blue-900 mb-1">👩 女性人数</label>
             <div class="flex items-center gap-1">
@@ -327,7 +328,6 @@
           </div>
         </div>
 
-        <!-- 単価カスタマイズ -->
         <div class="grid grid-cols-2 gap-3 pt-1 text-xs border-t border-blue-200">
           <div>
             <label class="block font-bold text-blue-800 mb-0.5">男性単価 (¥)</label>
@@ -357,7 +357,7 @@
         </div>
       </div>
 
-      <!-- ワンドリンク制説明エリア -->
+      <!-- ワンドリンク制エリア -->
       <div id="onedrink-settings-area" class="hidden bg-purple-50 p-4 rounded-2xl border border-purple-100 text-center space-y-2">
         <div class="text-sm font-bold text-purple-900">🥤 ワンドリンクオーダー制</div>
         <div class="text-xs text-purple-700">入店時チャージ代金は ¥0 です。<br>注文時に最初のドリンクを追加してください。</div>
@@ -480,77 +480,8 @@
 
   <!-- アプリJSロジック -->
   <script>
-        // 1. グローバル変数にチャージ基本設定を追加
-    let chargeSettings = {
-      maleRate: 1000,
-      femaleRate: 500
-    };
-    
-    // 2. 初期化 (DOMContentLoaded) 時の設定読み込み
-    window.addEventListener('DOMContentLoaded', () => {
-      if (isFirebaseActive) {
-        document.getElementById('sync-status-badge').innerText = '🟢 クラウド同期中 (Firebase)';
-        document.getElementById('sync-status-badge').className = 'text-xs font-bold text-emerald-400 mt-0.5';
-        setupFirebaseRealtimeListeners();
-      } else {
-        loadLocalStorage();
-        renderAll();
-      }
-      applyChargeSettingsToUI();
-    });
-    
-    // 3. Firebase リアルタイム同期リスナーへ追加 (setupFirebaseRealtimeListeners 内)
-    db.collection('settings').doc('charge').onSnapshot(doc => {
-      if (doc.exists) {
-        chargeSettings = doc.data();
-        applyChargeSettingsToUI();
-      } else {
-        db.collection('settings').doc('charge').set(chargeSettings);
-      }
-    });
-    
-    // 4. 設定の保存・更新処理（新関数）
-    function saveChargeSettings() {
-      const male = parseInt(document.getElementById('setting-rate-male').value) || 0;
-      const female = parseInt(document.getElementById('setting-rate-female').value) || 0;
-    
-      chargeSettings = { maleRate: male, femaleRate: female };
-    
-      if (isFirebaseActive) {
-        db.collection('settings').doc('charge').set(chargeSettings);
-      } else {
-        localStorage.setItem('om_charge_settings', JSON.stringify(chargeSettings));
-      }
-      alert('チャージ基本単価を保存しました。');
-    }
-    
-    function applyChargeSettingsToUI() {
-      if (document.getElementById('setting-rate-male')) {
-        document.getElementById('setting-rate-male').value = chargeSettings.maleRate;
-        document.getElementById('setting-rate-female').value = chargeSettings.femaleRate;
-      }
-    }
-    
-    // 5. ローカルストレージ読み込みへの追加 (loadLocalStorage 内)
-    const savedChargeSettings = localStorage.getItem('om_charge_settings');
-    if (savedChargeSettings) chargeSettings = JSON.parse(savedChargeSettings);
-    
-    // 6. 入店モーダルを開く際の初期値セット (openCheckinModal 内を修正)
-    function openCheckinModal() {
-      document.getElementById('checkin-name').value = '';
-      document.getElementById('checkin-guests-male').value = '1';
-      document.getElementById('checkin-guests-female').value = '0';
-      document.getElementById('checkin-guests-onedrink').value = '1';
-      
-      // 設定された単価を入力フォームにセット
-      document.getElementById('rate-male').value = chargeSettings.maleRate || 1000;
-      document.getElementById('rate-female').value = chargeSettings.femaleRate || 500;
-    
-      setCheckinType('charge');
-      setChargePayment('cash');
-      calculateCheckinTotal();
-      document.getElementById('checkin-modal').classList.remove('hidden');
-    }
+    let chargeSettings = { maleRate: 1000, femaleRate: 500 };
+
     let products = [
       { id: 'p1', name: '生ビール', price: 600, category: 'drink', defaultPaid: false, stockType: 'unlimited', stockCount: 0 },
       { id: 'p2', name: 'ハイボール', price: 500, category: 'drink', defaultPaid: false, stockType: 'unlimited', stockCount: 0 },
@@ -568,7 +499,7 @@
     let selectedProductForOrder = null;
     let selectedOrderPayType = 'unpaid';
     let selectedChargePayType = 'cash';
-    let selectedCheckinType = 'charge'; // 'charge' or 'onedrink'
+    let selectedCheckinType = 'charge';
 
     window.addEventListener('DOMContentLoaded', () => {
       if (isFirebaseActive) {
@@ -579,10 +510,20 @@
         loadLocalStorage();
         renderAll();
       }
+      applyChargeSettingsToUI();
     });
 
     // Firebase リアルタイム同期リスナー
     function setupFirebaseRealtimeListeners() {
+      db.collection('settings').doc('charge').onSnapshot(doc => {
+        if (doc.exists) {
+          chargeSettings = doc.data();
+          applyChargeSettingsToUI();
+        } else {
+          db.collection('settings').doc('charge').set(chargeSettings);
+        }
+      });
+
       db.collection('products').onSnapshot(snapshot => {
         if (!snapshot.empty) {
           products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -622,6 +563,7 @@
 
     function saveData() {
       if (!isFirebaseActive) {
+        localStorage.setItem('om_charge_settings', JSON.stringify(chargeSettings));
         localStorage.setItem('om_products', JSON.stringify(products));
         localStorage.setItem('om_events', JSON.stringify(events));
         localStorage.setItem('om_current_event_id', currentEventId);
@@ -631,12 +573,14 @@
     }
 
     function loadLocalStorage() {
+      const savedCharge = localStorage.getItem('om_charge_settings');
       const p = localStorage.getItem('om_products');
       const ev = localStorage.getItem('om_events');
       const evId = localStorage.getItem('om_current_event_id');
       const c = localStorage.getItem('om_customers');
       const h = localStorage.getItem('om_history');
 
+      if (savedCharge) chargeSettings = JSON.parse(savedCharge);
       if (p) products = JSON.parse(p);
       if (ev) events = JSON.parse(ev);
       if (evId) currentEventId = evId;
@@ -650,6 +594,31 @@
       renderProductList();
       renderQuickMenuButtons();
       renderSalesSummary();
+      applyChargeSettingsToUI();
+    }
+
+    // チャージ設定管理
+    function saveChargeSettings() {
+      const male = parseInt(document.getElementById('setting-rate-male').value) || 0;
+      const female = parseInt(document.getElementById('setting-rate-female').value) || 0;
+
+      chargeSettings = { maleRate: male, femaleRate: female };
+
+      if (isFirebaseActive) {
+        db.collection('settings').doc('charge').set(chargeSettings);
+      } else {
+        localStorage.setItem('om_charge_settings', JSON.stringify(chargeSettings));
+      }
+      alert('チャージ基本単価を保存しました！');
+    }
+
+    function applyChargeSettingsToUI() {
+      const maleInput = document.getElementById('setting-rate-male');
+      const femaleInput = document.getElementById('setting-rate-female');
+      if (maleInput && femaleInput) {
+        maleInput.value = chargeSettings.maleRate;
+        femaleInput.value = chargeSettings.femaleRate;
+      }
     }
 
     function switchTab(tabName) {
@@ -712,12 +681,16 @@
       });
     }
 
-    // --- チェックイン モーダルコントロール ---
+    // チェックイン
     function openCheckinModal() {
       document.getElementById('checkin-name').value = '';
       document.getElementById('checkin-guests-male').value = '1';
       document.getElementById('checkin-guests-female').value = '0';
       document.getElementById('checkin-guests-onedrink').value = '1';
+      
+      document.getElementById('rate-male').value = chargeSettings.maleRate || 1000;
+      document.getElementById('rate-female').value = chargeSettings.femaleRate || 500;
+
       setCheckinType('charge');
       setChargePayment('cash');
       calculateCheckinTotal();
@@ -819,7 +792,6 @@
           time: timeStr
         });
       } else {
-        // ワンドリンク制
         guests = parseInt(document.getElementById('checkin-guests-onedrink').value) || 1;
       }
 
